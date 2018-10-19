@@ -1,5 +1,6 @@
 package com.girnd.fkicrgallery;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
@@ -7,10 +8,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
@@ -31,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mRecyclerViewPhotos;
     private List<GalleryItem> mItemList;
     private int mPageNumber = 1;
+    private String mQuery;
+    private FlickrGetter mFlickrGetter;
 
     private  PhotosAdapter mPhotosAdapter;
 
@@ -43,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerViewPhotos = findViewById(R.id.recyclerViewPhoto);
 
 
+        mFlickrGetter = new FlickrGetter();
         mItemList = new ArrayList<>();
 
 
@@ -53,11 +62,40 @@ public class MainActivity extends AppCompatActivity {
         super.onPostResume();
         FlickrGetter flickrGetter = new FlickrGetter();
         LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
-        loadPhotoTask.execute(flickrGetter.getSearchUri("cat", mPageNumber));
+        loadPhotoTask.execute(flickrGetter.getFetchUri(1));
         GridLayoutManager gridLayoutManager = new GridLayoutManager(MainActivity.this,3);
         mPhotosAdapter = new PhotosAdapter();
         mRecyclerViewPhotos.setAdapter(mPhotosAdapter);
         mRecyclerViewPhotos.setLayoutManager(gridLayoutManager);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.search_view, menu);
+        MenuItem item = menu.findItem(R.id.menu_item_search);
+        SearchView searchView = (SearchView) item.getActionView();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String s) {
+                mQuery = s;
+                LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
+                loadPhotoTask.execute(mFlickrGetter.getSearchUri(mQuery,1));
+                Log.i("Search_View", "Searching: " + mQuery);
+                mItemList.clear();
+                InputMethodManager inm = (InputMethodManager) getBaseContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                inm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                getCurrentFocus().clearFocus();
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String s) {
+                Log.i("Search_View", "Query change: " + s);
+                return false;
+            }
+        });
+        return super.onCreateOptionsMenu(menu);
     }
 
     private class PhotoHolder extends RecyclerView.ViewHolder{
@@ -105,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
             FlickrGetter flickrGetter = new FlickrGetter();
             if (holder.getLayoutPosition() == mItemList.size() - 1 && mPageNumber <= 10){
                 LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
-                loadPhotoTask.execute(flickrGetter.getSearchUri("cat", ++mPageNumber));
+                loadPhotoTask.execute(flickrGetter.getSearchUri(mQuery, ++mPageNumber));
             }
 
         }
