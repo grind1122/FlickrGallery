@@ -94,7 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 mItemList.clear();
                 InputMethodManager inm = (InputMethodManager) getBaseContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 inm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-                getCurrentFocus().clearFocus();
+                mSearchView.clearFocus();
+                mSearchView.onActionViewCollapsed();
                 return true;
             }
 
@@ -102,6 +103,13 @@ public class MainActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String s) {
                 Log.i("Search_View", "Query change: " + s);
                 return false;
+            }
+        });
+        mSearchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String query = QueryPreferences.getQuery(getBaseContext());
+                mSearchView.setQuery(query, false);
             }
         });
         return super.onCreateOptionsMenu(menu);
@@ -114,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 QueryPreferences.setQuery(getBaseContext(), null);
                 mItemList.clear();
                 new LoadPhotoTask().execute(mFlickrGetter.getFetchUri(1));
-                mSearchView.setQuery("", false);
+                mSearchView.setQuery(null, false);
         }
         return super.onOptionsItemSelected(item);
     }
