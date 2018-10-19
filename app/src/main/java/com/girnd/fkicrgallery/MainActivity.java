@@ -51,8 +51,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostResume() {
         super.onPostResume();
+        //lol
+        FlickrGetter flickrGetter = new FlickrGetter();
         LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
-        loadPhotoTask.execute(mPageNumber);
+        loadPhotoTask.execute(flickrGetter.getSearchUri("cat", mPageNumber));
         GridLayoutManager gridLayoutManager = new GridLayoutManager(MainActivity.this,3);
         mPhotosAdapter = new PhotosAdapter();
         mRecyclerViewPhotos.setAdapter(mPhotosAdapter);
@@ -73,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
                     .resize(mRecyclerViewPhotos.getWidth()/3, mRecyclerViewPhotos.getWidth()/3)
                     .centerCrop()
                     .into(holder);
-}
+        }
     }
 
     private class PhotosAdapter extends RecyclerView.Adapter<PhotoHolder>{
@@ -101,9 +103,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onViewAttachedToWindow(@NonNull PhotoHolder holder) {
             super.onViewAttachedToWindow(holder);
+            FlickrGetter flickrGetter = new FlickrGetter();
             if (holder.getLayoutPosition() == mItemList.size() - 1 && mPageNumber <= 10){
                 LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
-                loadPhotoTask.execute(++mPageNumber);
+                loadPhotoTask.execute(flickrGetter.getSearchUri("cat", ++mPageNumber));
             }
 
         }
@@ -111,9 +114,47 @@ public class MainActivity extends AppCompatActivity {
 
     private class FlickrGetter {
         private final String TAG = "FlickrTag";
-        private final String METHOD = "flickr.photos.getRecent";
+        private final String METHOD_GET_ALL = "flickr.photos.getRecent";
+        private final String METHOD_SEARCH = "flickr.photos.search";
         private final String API_KEY = "0459f37aaa49617378a4b38953fb092c";
         private HttpURLConnection connection;
+
+        private String buildURI(String method, String query, int pageNumber){
+            if (method.equals(METHOD_GET_ALL)){
+                String uri = Uri.parse("https://api.flickr.com/services/rest/")
+                        .buildUpon()
+                        .appendQueryParameter("method", method)
+                        .appendQueryParameter("api_key", API_KEY)
+                        .appendQueryParameter("format", "json")
+                        .appendQueryParameter("nojsoncallback", "1")
+                        .appendQueryParameter("page", String.valueOf(pageNumber))
+                        .appendQueryParameter("extras", "url_s")
+                        .build().toString();
+                return uri;
+            }
+            if (method.equals(METHOD_SEARCH)){
+                String uri = Uri.parse("https://api.flickr.com/services/rest/")
+                        .buildUpon()
+                        .appendQueryParameter("method", method)
+                        .appendQueryParameter("api_key", API_KEY)
+                        .appendQueryParameter("format", "json")
+                        .appendQueryParameter("nojsoncallback", "1")
+                        .appendQueryParameter("page", String.valueOf(pageNumber))
+                        .appendQueryParameter("extras", "url_s")
+                        .appendQueryParameter("text", query)
+                        .build().toString();
+                return uri;
+            }
+            return null;
+        }
+
+        private String getSearchUri(String query, int pageNumber){
+            return buildURI(METHOD_SEARCH, query, pageNumber);
+        }
+
+        private String getFetchUri(int pageNumber){
+            return buildURI(METHOD_GET_ALL, null, pageNumber);
+        }
 
         private byte[] getBytesFlickr (String specUri) throws IOException {
             try {
@@ -138,16 +179,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        private void getItemsFromFlickr(int pageNumber) throws IOException{
-            String uri = Uri.parse("https://api.flickr.com/services/rest/")
-                    .buildUpon()
-                    .appendQueryParameter("method", METHOD)
-                    .appendQueryParameter("api_key", API_KEY)
-                    .appendQueryParameter("format", "json")
-                    .appendQueryParameter("nojsoncallback", "1")
-                    .appendQueryParameter("page", String.valueOf(pageNumber))
-                    .appendQueryParameter("extras", "url_s")
-                    .build().toString();
+        private void getItemsFromFlickr(String uri) throws IOException{
+//            String uri = Uri.parse("https://api.flickr.com/services/rest/")
+//                    .buildUpon()
+//                    .appendQueryParameter("method", METHOD)
+//                    .appendQueryParameter("api_key", API_KEY)
+//                    .appendQueryParameter("format", "json")
+//                    .appendQueryParameter("nojsoncallback", "1")
+//                    .appendQueryParameter("page", String.valueOf(pageNumber))
+//                    .appendQueryParameter("extras", "url_s")
+//                    .build().toString();
             byte[] bytes = getBytesFlickr(uri);
             String JSONString = new String(bytes);
             Log.i(TAG, JSONString);
@@ -175,13 +216,13 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    private class LoadPhotoTask extends AsyncTask<Integer, Void, Void>{
+    private class LoadPhotoTask extends AsyncTask<String, Void, Void>{
 
         @Override
-        protected Void doInBackground(Integer... integers) {
+        protected Void doInBackground(String... strings) {
             FlickrGetter flickrGetter = new FlickrGetter();
             try {
-                flickrGetter.getItemsFromFlickr(integers[0]);
+                flickrGetter.getItemsFromFlickr(strings[0]);
             } catch (IOException e) {
                 Log.i("LoadError","Load error");
             }
