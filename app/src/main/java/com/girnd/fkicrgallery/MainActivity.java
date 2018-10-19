@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private int mPageNumber = 1;
     private String mQuery;
     private FlickrGetter mFlickrGetter;
+    private SearchView mSearchView;
 
     private  PhotosAdapter mPhotosAdapter;
 
@@ -81,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.search_view, menu);
         MenuItem item = menu.findItem(R.id.menu_item_search);
-        SearchView searchView = (SearchView) item.getActionView();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        mSearchView = (SearchView) item.getActionView();
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
                 mQuery = s;
@@ -104,6 +105,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.menu_item_clear :
+                QueryPreferences.setQuery(getBaseContext(), null);
+                mItemList.clear();
+                new LoadPhotoTask().execute(mFlickrGetter.getFetchUri(1));
+                mSearchView.setQuery("", false);
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private class PhotoHolder extends RecyclerView.ViewHolder{
