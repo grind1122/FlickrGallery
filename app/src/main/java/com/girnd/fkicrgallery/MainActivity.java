@@ -1,8 +1,10 @@
 package com.girnd.fkicrgallery;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -50,9 +52,9 @@ public class MainActivity extends AppCompatActivity {
 
         mRecyclerViewPhotos = findViewById(R.id.recyclerViewPhoto);
 
-
         mFlickrGetter = new FlickrGetter();
         mItemList = new ArrayList<>();
+
 
 
     }
@@ -60,9 +62,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostResume() {
         super.onPostResume();
+        String query = QueryPreferences.getQuery(this);
         FlickrGetter flickrGetter = new FlickrGetter();
         LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
-        loadPhotoTask.execute(flickrGetter.getFetchUri(1));
+        if (query == null){
+            loadPhotoTask.execute(flickrGetter.getFetchUri(1));
+        } else {
+            loadPhotoTask.execute(flickrGetter.getSearchUri(query,1));
+        }
         GridLayoutManager gridLayoutManager = new GridLayoutManager(MainActivity.this,3);
         mPhotosAdapter = new PhotosAdapter();
         mRecyclerViewPhotos.setAdapter(mPhotosAdapter);
@@ -79,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String s) {
                 mQuery = s;
+                QueryPreferences.setQuery(getBaseContext(), mQuery);
                 LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
                 loadPhotoTask.execute(mFlickrGetter.getSearchUri(mQuery,1));
                 Log.i("Search_View", "Searching: " + mQuery);
@@ -273,4 +281,5 @@ public class MainActivity extends AppCompatActivity {
             mPhotosAdapter.notifyDataSetChanged();
         }
     }
+
 }
