@@ -51,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPostResume() {
         super.onPostResume();
-        //lol
         FlickrGetter flickrGetter = new FlickrGetter();
         LoadPhotoTask loadPhotoTask = new LoadPhotoTask();
         loadPhotoTask.execute(flickrGetter.getSearchUri("cat", mPageNumber));
